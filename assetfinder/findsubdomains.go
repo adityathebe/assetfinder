@@ -1,4 +1,4 @@
-package main
+package assetfinder
 
 import (
 	"fmt"
@@ -39,14 +39,10 @@ func callSubdomainsAggregateEndpoint(domain string) []string {
 	}
 
 	for _, result := range wrapper.Cidrs.Cidr16.Results {
-		for _, domain := range result.Data.Domains {
-			out = append(out, domain)
-		}
+		out = append(out, result.Data.Domains...)
 	}
 	for _, result := range wrapper.Cidrs.Cidr24.Results {
-		for _, domain := range result.Data.Domains {
-			out = append(out, domain)
-		}
+		out = append(out, result.Data.Domains...)
 	}
 
 	return out

@@ -1,39 +1,21 @@
-package main
+package assetfinder
 
 import (
-	"bufio"
 	"encoding/json"
-	"flag"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
-	"time"
 )
 
-func main() {
-	var subsOnly bool
-	flag.BoolVar(&subsOnly, "subs-only", false, "Only include subdomains of search domain")
-	flag.Parse()
-
-	var domains io.Reader
-	domains = os.Stdin
-
-	domain := flag.Arg(0)
-	if domain != "" {
-		domains = strings.NewReader(domain)
-	}
-
+func Scan(domain string) []string {
 	sources := []fetchFn{
 		fetchCertSpotter,
 		fetchHackerTarget,
 		fetchThreatCrowd,
 		fetchCrtSh,
 		fetchFacebook,
-		//fetchWayback, // A little too slow :(
+		fetchWayback,
 		fetchVirusTotal,
 		fetchFindSubDomains,
 		fetchUrlscan,
@@ -43,37 +25,33 @@ func main() {
 	out := make(chan string)
 	var wg sync.WaitGroup
 
-	sc := bufio.NewScanner(domains)
-	rl := newRateLimiter(time.Second)
+	domain = strings.ToLower(domain)
 
-	for sc.Scan() {
-		domain := strings.ToLower(sc.Text())
+	// call each of the source workers in a goroutine
+	for _, source := range sources {
+		wg.Add(1)
+		fn := source
 
-		// call each of the source workers in a goroutine
-		for _, source := range sources {
-			wg.Add(1)
-			fn := source
+		go func() {
+			defer wg.Done()
+			// funcName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 
-			go func() {
-				defer wg.Done()
+			names, err := fn(domain)
+			if err != nil {
+				// log.Println(err, funcName)
+				return
+			}
 
-				rl.Block(fmt.Sprintf("%#v", fn))
-				names, err := fn(domain)
+			// log.Printf("[%s]:: Results: %d\n", funcName, len(names))
 
-				if err != nil {
-					//fmt.Fprintf(os.Stderr, "err: %s\n", err)
-					return
+			for _, n := range names {
+				n = cleanDomain(n)
+				if !strings.HasSuffix(n, domain) {
+					continue
 				}
-
-				for _, n := range names {
-					n = cleanDomain(n)
-					if subsOnly && !strings.HasSuffix(n, domain) {
-						continue
-					}
-					out <- n
-				}
-			}()
-		}
+				out <- n
+			}
+		}()
 	}
 
 	// close the output channel when all the workers are done
@@ -90,9 +68,13 @@ func main() {
 			continue
 		}
 		printed[n] = true
-
-		fmt.Println(n)
 	}
+
+	subdomains := make([]string, 0, len(printed))
+	for k := range printed {
+		subdomains = append(subdomains, k)
+	}
+	return subdomains
 }
 
 type fetchFn func(string) ([]string, error)
