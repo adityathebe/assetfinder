@@ -1,11 +1,11 @@
-package assetfinder
+package sources
 
 import (
 	"fmt"
 	"strings"
 )
 
-func fetchBufferOverrun(domain string) ([]string, error) {
+func FetchBufferOverrun(domain string) ([]string, error) {
 	out := make([]string, 0)
 
 	fetchURL := fmt.Sprintf("https://dns.bufferover.run/dns?q=.%s", domain)

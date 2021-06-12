@@ -1,10 +1,10 @@
-package assetfinder
+package sources
 
 import (
 	"fmt"
 )
 
-func fetchCertSpotter(domain string) ([]string, error) {
+func FetchCertSpotter(domain string) ([]string, error) {
 	out := make([]string, 0)
 
 	fetchURL := fmt.Sprintf("https://api.certspotter.com/v1/issuances?domain=%s&include_subdomains=true&expand=dns_names", domain)

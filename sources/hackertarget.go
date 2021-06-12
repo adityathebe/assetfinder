@@ -1,4 +1,4 @@
-package assetfinder
+package sources
 
 import (
 	"bufio"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func fetchHackerTarget(domain string) ([]string, error) {
+func FetchHackerTarget(domain string) ([]string, error) {
 	out := make([]string, 0)
 
 	raw, err := httpGet(

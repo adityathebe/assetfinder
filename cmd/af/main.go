@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/adityathebe/assetfinder/assetfinder"
+	"github.com/adityathebe/assetfinder"
 )
 
 func main() {

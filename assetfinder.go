@@ -1,25 +1,26 @@
 package assetfinder
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/adityathebe/assetfinder/sources"
 )
+
+type fetchFn func(string) ([]string, error)
 
 func Scan(domain string) []string {
 	sources := []fetchFn{
-		fetchCertSpotter,
-		fetchHackerTarget,
-		fetchThreatCrowd,
-		fetchCrtSh,
-		fetchFacebook,
-		fetchWayback,
-		fetchVirusTotal,
-		fetchFindSubDomains,
-		fetchUrlscan,
-		fetchBufferOverrun,
+		sources.FetchCertSpotter,
+		sources.FetchHackerTarget,
+		sources.FetchThreatCrowd,
+		sources.FetchCrtSh,
+		sources.FetchFacebook,
+		sources.FetchWayback,
+		sources.FetchVirusTotal,
+		sources.FetchFindSubDomains,
+		sources.FetchUrlscan,
+		sources.FetchBufferOverrun,
 	}
 
 	out := make(chan string)
@@ -77,24 +78,6 @@ func Scan(domain string) []string {
 	return subdomains
 }
 
-type fetchFn func(string) ([]string, error)
-
-func httpGet(url string) ([]byte, error) {
-	res, err := http.Get(url)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	raw, err := ioutil.ReadAll(res.Body)
-
-	res.Body.Close()
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return raw, nil
-}
-
 func cleanDomain(d string) string {
 	d = strings.ToLower(d)
 
@@ -113,15 +96,4 @@ func cleanDomain(d string) string {
 
 	return d
 
-}
-
-func fetchJSON(url string, wrapper interface{}) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-
-	return dec.Decode(wrapper)
 }

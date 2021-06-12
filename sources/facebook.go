@@ -1,4 +1,4 @@
-package assetfinder
+package sources
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func fetchFacebook(domain string) ([]string, error) {
+func FetchFacebook(domain string) ([]string, error) {
 
 	appId := os.Getenv("FB_APP_ID")
 	appSecret := os.Getenv("FB_APP_SECRET")

@@ -1,10 +1,10 @@
-package assetfinder
+package sources
 
 import (
 	"fmt"
 )
 
-func fetchThreatCrowd(domain string) ([]string, error) {
+func FetchThreatCrowd(domain string) ([]string, error) {
 	out := make([]string, 0)
 
 	fetchURL := fmt.Sprintf("https://www.threatcrowd.org/searchApi/v2/domain/report/?domain=%s", domain)

@@ -1,4 +1,4 @@
-package assetfinder
+package sources
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ type crtShResult struct {
 	Name string `json:"common_name"`
 }
 
-func fetchCrtSh(domain string) ([]string, error) {
+func FetchCrtSh(domain string) ([]string, error) {
 	var results []crtShResult
 	var url = fmt.Sprintf("https://crt.sh/?q=%%.%s&output=json", domain)
 

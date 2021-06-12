@@ -1,4 +1,4 @@
-package assetfinder
+package sources
 
 import (
 	"fmt"
@@ -93,7 +93,7 @@ func callSubdomainsEndpoint(domain string) []string {
 	return out
 }
 
-func fetchFindSubDomains(domain string) ([]string, error) {
+func FetchFindSubDomains(domain string) ([]string, error) {
 
 	out := make([]string, 0)
 
