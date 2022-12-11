@@ -25,9 +25,9 @@ func main() {
 	sc := bufio.NewScanner(domains)
 
 	for sc.Scan() {
-		subdomains := assetfinder.Scan(sc.Text())
-		for _, sub := range subdomains {
-			fmt.Println(sub)
+		outChan := assetfinder.ScanMain(sc.Text())
+		for res := range outChan {
+			fmt.Println(res.String())
 		}
 	}
 }

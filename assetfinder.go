@@ -1,6 +1,7 @@
 package assetfinder
 
 import (
+	"encoding/json"
 	"strings"
 	"sync"
 
@@ -9,21 +10,44 @@ import (
 
 type fetchFn func(string) ([]string, error)
 
-func Scan(domain string) []string {
-	sources := []fetchFn{
-		sources.FetchCertSpotter,
-		sources.FetchHackerTarget,
-		sources.FetchThreatCrowd,
-		sources.FetchCrtSh,
-		sources.FetchFacebook,
-		sources.FetchWayback,
-		sources.FetchVirusTotal,
-		sources.FetchFindSubDomains,
-		sources.FetchUrlscan,
-		sources.FetchBufferOverrun,
+type Source struct {
+	name string
+	fn   fetchFn
+}
+
+type Result struct {
+	DNS string `json:"dns"`
+	Src string `json:"src"`
+}
+
+func (t *Result) String() string {
+	x, _ := json.Marshal(t)
+	return string(x)
+}
+
+func ScanMain(domain string) <-chan Result {
+	var outChan = make(chan Result)
+	go scan(domain, outChan)
+	return outChan
+}
+
+func scan(domain string, outChan chan<- Result) {
+	defer close(outChan)
+
+	sources := []Source{
+		{"CertSpotter", sources.FetchCertSpotter},
+		{"HackerTarget", sources.FetchHackerTarget},
+		{"ThreatCrowd", sources.FetchThreatCrowd},
+		{"CrtSh", sources.FetchCrtSh},
+		{"Facebook", sources.FetchFacebook},
+		{"Wayback", sources.FetchWayback},
+		{"VirusTotal", sources.FetchVirusTotal},
+		{"FindSubDomains", sources.FetchFindSubDomains},
+		{"Urlscan", sources.FetchUrlscan},
+		{"BufferOverrun", sources.FetchBufferOverrun},
 	}
 
-	out := make(chan string)
+	out := make(chan Result)
 	var wg sync.WaitGroup
 
 	domain = strings.ToLower(domain)
@@ -31,28 +55,26 @@ func Scan(domain string) []string {
 	// call each of the source workers in a goroutine
 	for _, source := range sources {
 		wg.Add(1)
-		fn := source
 
-		go func() {
+		go func(source Source) {
 			defer wg.Done()
-			// funcName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 
-			names, err := fn(domain)
+			names, err := source.fn(domain)
 			if err != nil {
-				// log.Println(err, funcName)
 				return
 			}
-
-			// log.Printf("[%s]:: Results: %d\n", funcName, len(names))
 
 			for _, n := range names {
 				n = cleanDomain(n)
 				if !strings.HasSuffix(n, domain) {
 					continue
 				}
-				out <- n
+				out <- Result{
+					DNS: n,
+					Src: source.name,
+				}
 			}
-		}()
+		}(source)
 	}
 
 	// close the output channel when all the workers are done
@@ -61,21 +83,15 @@ func Scan(domain string) []string {
 		close(out)
 	}()
 
-	// track what we've already printed to avoid duplicates
-	printed := make(map[string]bool)
-
+	var printed = make(map[string]struct{})
 	for n := range out {
-		if _, ok := printed[n]; ok {
+		if _, ok := printed[n.DNS]; ok {
 			continue
 		}
-		printed[n] = true
-	}
 
-	subdomains := make([]string, 0, len(printed))
-	for k := range printed {
-		subdomains = append(subdomains, k)
+		printed[n.DNS] = struct{}{}
+		outChan <- n
 	}
-	return subdomains
 }
 
 func cleanDomain(d string) string {
@@ -95,5 +111,4 @@ func cleanDomain(d string) string {
 	}
 
 	return d
-
 }
